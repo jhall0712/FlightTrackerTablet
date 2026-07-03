@@ -5,6 +5,10 @@ DEV_I2C_Port handle;
 
 DEV_I2C_Port DEV_I2C_Init()
 {
+    if (handle.bus) {
+        return handle;
+    }
+
     i2c_master_bus_config_t i2c_bus_config = {
         .i2c_port = EXAMPLE_I2C_MASTER_NUM,
         .sda_io_num = EXAMPLE_I2C_MASTER_SDA,

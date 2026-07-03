@@ -6,6 +6,16 @@ Visual flight tracker for the Waveshare ESP32-S3 7 inch LCD Type B
 The firmware draws a radar-style map centered on your coordinates and refreshes
 nearby ADS-B aircraft from `api.adsb.lol` every 15 seconds.
 
+## Features
+
+- Radar view with labeled range rings, bearing spokes, altitude color coding,
+  and short movement trails.
+- Closest/selected aircraft detail panel with callsign, registration, type,
+  distance, bearing, altitude, speed, heading, and seen age.
+- Overhead alert banner for nearby aircraft below the configured altitude.
+- Touch controls for selecting aircraft, changing radius, dimming brightness,
+  toggling the settings panel, and cycling refresh intervals.
+
 ## Configure
 
 The preferred setup path is on-device configuration:
