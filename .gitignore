@@ -1,0 +1,7 @@
+.pio/
+.vscode/
+include/secrets.h
+*.bin
+!webflash/firmware/*.bin
+*.elf
+*.map

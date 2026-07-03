@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Tracker Tablet Web Flasher</title>
+    <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111d;
+        --panel: #0d1d2a;
+        --line: #25485a;
+        --text: #eef8fb;
+        --muted: #9fc3ce;
+        --accent: #ffba49;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      main {
+        width: min(760px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 6vw, 4rem);
+        line-height: 1;
+      }
+
+      p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.55;
+      }
+
+      section {
+        margin-top: 28px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      ol {
+        margin: 16px 0 0;
+        padding-left: 24px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      code {
+        color: var(--accent);
+      }
+
+      esp-web-install-button {
+        display: block;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Flight Tracker Tablet</h1>
+      <p>
+        Flash the Waveshare ESP32-S3 7 inch tablet with the visual overhead
+        flight tracker firmware.
+      </p>
+
+      <section>
+        <h2>Install Firmware</h2>
+        <p>Use Chrome or Edge on desktop. Connect the tablet USB-C port that exposes the CH343 serial adapter.</p>
+        <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+      </section>
+
+      <section>
+        <h2>After Flashing</h2>
+        <ol>
+          <li>Join Wi-Fi network <code>FlightTrackerTablet</code>.</li>
+          <li>Use password <code>flighttablet</code>.</li>
+          <li>Open <code>http://192.168.4.1</code>.</li>
+          <li>Save Wi-Fi, latitude, longitude, and radius.</li>
+        </ol>
+      </section>
+    </main>
+  </body>
+</html>
