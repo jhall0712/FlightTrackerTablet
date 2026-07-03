@@ -1,6 +1,6 @@
 {
   "name": "Flight Tracker Tablet",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "new_install_prompt_erase": true,
   "builds": [
     {

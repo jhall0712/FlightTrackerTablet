@@ -125,6 +125,7 @@ uint32_t lastFetchMs = 0;
 uint32_t lastRenderMs = 0;
 uint32_t lastTouchMs = 0;
 uint32_t fetchEveryMs = kFetchEveryMs;
+TaskHandle_t fetchTaskHandle = nullptr;
 String statusLine = "Booting";
 String lastUpdated = "never";
 bool setupPortalRunning = false;
@@ -721,6 +722,37 @@ void connectWifi() {
         startSetupPortal();
     }
 }
+
+void fetchTask(void *) {
+    delay(750);
+    for (;;) {
+        uint32_t waitMs = configured() ? fetchEveryMs : 2000UL;
+        if (configured() && WiFi.status() == WL_CONNECTED) {
+            statusLine = "Fetching ADS-B";
+            render();
+            fetchAircraft();
+            render();
+            lastFetchMs = millis();
+            waitMs = fetchEveryMs;
+        }
+        vTaskDelay(pdMS_TO_TICKS(waitMs));
+    }
+}
+
+void startFetchTask() {
+    if (fetchTaskHandle) return;
+    BaseType_t ok = xTaskCreatePinnedToCore(
+        fetchTask,
+        "adsbFetch",
+        32768,
+        nullptr,
+        1,
+        &fetchTaskHandle,
+        0);
+    if (ok != pdPASS) {
+        statusLine = "Fetch task failed";
+    }
+}
 }
 
 void setup() {
@@ -759,9 +791,8 @@ void setup() {
     }
     render();
     connectWifi();
-    fetchAircraft();
+    startFetchTask();
     render();
-    lastFetchMs = millis();
 }
 
 void loop() {
@@ -773,12 +804,6 @@ void loop() {
 
     if (configured() && WiFi.status() != WL_CONNECTED) {
         connectWifi();
-    }
-
-    if (millis() - lastFetchMs >= fetchEveryMs) {
-        lastFetchMs = millis();
-        fetchAircraft();
-        render();
     }
 
     delay(50);
