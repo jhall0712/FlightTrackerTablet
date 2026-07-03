@@ -9,10 +9,14 @@
 #include <esp_heap_caps.h>
 #include <esp_system.h>
 #include <math.h>
+#include <memory>
+#include <new>
 #include "gt911.h"
 #include "i2c.h"
 #include "io_extension.h"
 #include "rgb_lcd_port.h"
+
+SET_LOOP_TASK_STACK_SIZE(16 * 1024);
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -117,6 +121,7 @@ Preferences preferences;
 WebServer server(80);
 AppConfig config;
 Aircraft aircraft[kMaxAircraft];
+Aircraft previousAircraft[kMaxAircraft];
 size_t aircraftCount = 0;
 uint32_t lastFetchMs = 0;
 uint32_t lastRenderMs = 0;
@@ -635,38 +640,41 @@ void pollTouch() {
 bool fetchAircraft() {
     if (WiFi.status() != WL_CONNECTED || !configured()) return false;
 
-    WiFiClientSecure client;
-    client.setInsecure();
+    std::unique_ptr<WiFiClientSecure> client(new (std::nothrow) WiFiClientSecure());
+    std::unique_ptr<HTTPClient> http(new (std::nothrow) HTTPClient());
+    if (!client || !http) {
+        statusLine = "HTTP memory failed";
+        return false;
+    }
+    client->setInsecure();
 
     String url = "https://api.adsb.lol/v2/lat/" + String(config.homeLat, 6) +
                  "/lon/" + String(config.homeLon, 6) +
                  "/dist/" + String(config.radiusNm);
 
-    HTTPClient http;
-    http.setTimeout(10000);
-    if (!http.begin(client, url)) {
+    http->setTimeout(10000);
+    if (!http->begin(*client, url)) {
         statusLine = "HTTP begin failed";
         return false;
     }
 
-    int code = http.GET();
+    int code = http->GET();
     if (code != HTTP_CODE_OK) {
         statusLine = "ADS-B HTTP " + String(code);
-        http.end();
+        http->end();
         return false;
     }
 
     JsonDocument doc;
-    DeserializationError err = deserializeJson(doc, http.getStream());
-    http.end();
+    DeserializationError err = deserializeJson(doc, http->getStream());
+    http->end();
     if (err) {
         statusLine = "JSON parse failed";
         return false;
     }
 
-    Aircraft oldAircraft[kMaxAircraft];
     size_t oldCount = aircraftCount;
-    memcpy(oldAircraft, aircraft, sizeof(oldAircraft));
+    memcpy(previousAircraft, aircraft, sizeof(previousAircraft));
 
     aircraftCount = 0;
     for (JsonObject ac : doc["ac"].as<JsonArray>()) {
@@ -686,10 +694,10 @@ bool fetchAircraft() {
         a.distNm = ac["dst"] | 0.0;
         a.bearingDeg = ac["dir"] | 0.0;
         a.seenSec = ac["seen"] | 0.0;
-        int prev = findAircraftByHex(a.hex, oldAircraft, oldCount);
+        int prev = findAircraftByHex(a.hex, previousAircraft, oldCount);
         if (prev >= 0) {
-            a.prevLat = oldAircraft[prev].lat;
-            a.prevLon = oldAircraft[prev].lon;
+            a.prevLat = previousAircraft[prev].lat;
+            a.prevLon = previousAircraft[prev].lon;
             a.hasPrev = true;
         }
         a.valid = true;
