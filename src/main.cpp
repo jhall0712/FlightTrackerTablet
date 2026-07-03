@@ -7,6 +7,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <esp_heap_caps.h>
+#include <esp_system.h>
 #include <math.h>
 #include "gt911.h"
 #include "i2c.h"
@@ -128,9 +129,26 @@ bool touchReady = false;
 bool touchWasDown = false;
 bool showSettings = false;
 int selectedAircraft = -1;
+esp_reset_reason_t bootResetReason = ESP_RST_UNKNOWN;
 
 uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
     return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+}
+
+const char *resetReasonText() {
+    switch (bootResetReason) {
+        case ESP_RST_POWERON: return "power";
+        case ESP_RST_EXT: return "ext";
+        case ESP_RST_SW: return "sw";
+        case ESP_RST_PANIC: return "panic";
+        case ESP_RST_INT_WDT: return "int-wdt";
+        case ESP_RST_TASK_WDT: return "task-wdt";
+        case ESP_RST_WDT: return "wdt";
+        case ESP_RST_DEEPSLEEP: return "sleep";
+        case ESP_RST_BROWNOUT: return "brownout";
+        case ESP_RST_SDIO: return "sdio";
+        default: return "unknown";
+    }
 }
 
 String trimCopy(const char *value) {
@@ -404,6 +422,8 @@ void drawStaticFrame() {
     drawText(kSidebarX + 24, 20, "Selected", white, 2);
     drawText(kSidebarX + 24, 550, statusLine, muted, 1);
     drawText(kSidebarX + 24, 568, "Updated " + lastUpdated, muted, 1);
+    drawText(kSidebarX + 24, 586, String("Touch ") + (touchReady ? "ready" : "off") +
+                                      "  reset " + resetReasonText(), muted, 1);
 
     uint16_t fill = color565(16, 34, 48);
     uint16_t border = color565(53, 85, 101);
@@ -700,6 +720,7 @@ void connectWifi() {
 void setup() {
     Serial.begin(115200);
     delay(100);
+    bootResetReason = esp_reset_reason();
     if (!psramFound()) {
         Serial.println("PSRAM not found; LCD framebuffer cannot be allocated");
         while (true) delay(1000);

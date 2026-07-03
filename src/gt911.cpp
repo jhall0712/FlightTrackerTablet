@@ -346,13 +346,17 @@ static esp_err_t esp_lcd_touch_gt911_del(esp_lcd_touch_handle_t tp)
 // Function to initialize the GT911 touch controller
 esp_lcd_touch_handle_t touch_gt911_init()
 {
+    tp_handle = NULL;
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;  // Declare a handle for touch panel I/O
     // Configure the I2C communication settings for the GT911 touch controller
     const esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_GT911_CONFIG();
 
     // Reset the touch screen before usage
     DEV_I2C_Port port = DEV_I2C_Init();  // Initialize I2C port
-    IO_EXTENSION_Init();  // Initialize the IO EXTENSION GPIO chip for backlight control
+    if (!port.bus) {
+        ESP_LOGE(TAG, "I2C bus not ready for GT911");
+        return NULL;
+    }
     delay(10);
     // DEV_GPIO_Mode(EXAMPLE_PIN_NUM_TOUCH_INT, GPIO_MODE_INPUT_OUTPUT);  // Set GPIO pin mode for interrupt
     pinMode(EXAMPLE_PIN_NUM_TOUCH_INT, OUTPUT);
@@ -368,7 +372,11 @@ esp_lcd_touch_handle_t touch_gt911_init()
 
     ESP_LOGI(TAG, "Initialize I2C panel IO");  // Log I2C panel I/O initialization
     // Create a new I2C panel I/O handle for the touch controller
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(port.bus, &tp_io_config, &tp_io_handle));
+    esp_err_t err = esp_lcd_new_panel_io_i2c(port.bus, &tp_io_config, &tp_io_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Touch panel IO init failed: %s", esp_err_to_name(err));
+        return NULL;
+    }
 
     ESP_LOGI(TAG, "Initialize touch controller GT911");  // Log touch controller initialization
     // Configure the touch controller with necessary settings (coordinates, GPIO pins, etc.)
@@ -389,7 +397,12 @@ esp_lcd_touch_handle_t touch_gt911_init()
     };
 
     // Create a new touch controller instance using the configured I2C and settings
-    ESP_ERROR_CHECK(esp_lcd_touch_new_i2c_gt911(tp_io_handle, &tp_cfg, &tp_handle));
+    err = esp_lcd_touch_new_i2c_gt911(tp_io_handle, &tp_cfg, &tp_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "GT911 init failed: %s", esp_err_to_name(err));
+        tp_handle = NULL;
+        return NULL;
+    }
 
     return tp_handle;  // Return the touch controller handle
 }
@@ -397,13 +410,21 @@ esp_lcd_touch_handle_t touch_gt911_init()
 // Function to read touch points from the GT911 touch controller
 touch_gt911_point_t touch_gt911_read_point(uint8_t max_touch_cnt)
 {
-    touch_gt911_point_t data;  // Declare a structure to hold touch point data
+    touch_gt911_point_t data = {};  // Declare a structure to hold touch point data
+    if (!tp_handle || max_touch_cnt == 0) {
+        return data;
+    }
 
     /* Read touch data from the touch controller */
-    esp_lcd_touch_read_data(tp_handle);  // Read raw data from the touch controller
+    esp_err_t err = esp_lcd_touch_read_data(tp_handle);  // Read raw data from the touch controller
+    if (err != ESP_OK) {
+        return data;
+    }
 
     /* Get the touch coordinates and count of touch points */
-    esp_lcd_touch_get_coordinates(tp_handle, data.x, data.y, NULL, &data.cnt, max_touch_cnt);
+    if (!esp_lcd_touch_get_coordinates(tp_handle, data.x, data.y, NULL, &data.cnt, max_touch_cnt)) {
+        data.cnt = 0;
+    }
 
     return data;  // Return the touch point data
 }

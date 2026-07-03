@@ -83,5 +83,7 @@ Then visit `http://localhost:8000`.
   `RepublicCommand/display-tablet` firmware.
 - If Wi-Fi or coordinates are missing, the first screen starts setup AP mode and
   shows the setup network details.
+- The bottom of the sidebar shows touch status and the previous reset reason to
+  help diagnose hardware or watchdog resets.
 - ADS-B data can be incomplete or delayed. Treat this as a fun local display,
   not a navigation or safety device.
