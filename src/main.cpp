@@ -16,8 +16,6 @@
 #include "io_extension.h"
 #include "rgb_lcd_port.h"
 
-SET_LOOP_TASK_STACK_SIZE(16 * 1024);
-
 #if __has_include("secrets.h")
 #include "secrets.h"
 #else
