@@ -52,8 +52,11 @@ pio device monitor
 ## Web Flasher
 
 The `webflash/` folder contains an ESP Web Tools installer page and manifest.
-Serve it from GitHub Pages or any static web server, then open it in Chrome or
-Edge:
+It is deployed by GitHub Pages from `.github/workflows/pages.yml` when Pages is
+configured to use GitHub Actions.
+
+You can also serve it from any local static web server, then open it in Chrome
+or Edge:
 
 ```powershell
 python -m http.server 8000 --directory webflash
